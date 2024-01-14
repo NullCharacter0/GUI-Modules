@@ -22,7 +22,7 @@ def createCanvasFromMatPlt(fig ,master,pack_toolbar: bool = False):
 
 class FinancialModules:
     
-    class PiePerformance(Frame):
+    class PiePerformanceFrame(Frame):
         def __init__(self, master , ):
             size_of_groups=[1,1,1,1,1]
             labels = ["f" for i in size_of_groups]
@@ -196,7 +196,6 @@ class DoubleDataFrameViewer(tk.Frame):
         
         self.closedTradesTree.bind("<ButtonPress-1>", self.on_closedtree_click )
         self.openTradesTree.bind("<ButtonPress-1>", self.on_opentree_click )
-
 
 
 class SingleDataFrameViewer(tk.Frame):
