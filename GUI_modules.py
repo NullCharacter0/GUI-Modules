@@ -308,6 +308,75 @@ class SingleTreeViewer(tk.Frame):
         # self.tree.selection_remove(self.tree.selection())
 
 
+
+class SingleTreeViewerModed(tk.Frame):
+    
+    
+    def format_columnsANDheadings(self,dataframe):
+        """Edits The Treeview object's columns and headings to hold the 
+        contents of the given dataframe
+        """
+        # Format columns
+        self.tree.column("#0", width=0, stretch=tk.NO) # I Believe this is the index column 
+        for col in dataframe.columns:
+            # self.tree.column(col, anchor=tk.W, width=80)
+            self.tree.heading(col, text=col, anchor=tk.W)
+    
+    
+    def __init__(self, master,dataframe:pd.DataFrame, column_blackList: list = []) -> None:
+        
+        super().__init__(master)
+        # Create a treeview widget
+        
+        if column_blackList != [] :
+                
+            filterColumnList = [i for i in dataframe.columns if i not in  column_blackList]
+            
+            dataframe =  dataframe[filterColumnList]
+            print(dataframe.columns)
+            pass        
+        self.tree = ttk.Treeview(self)
+        self.tree["columns"] = tuple(dataframe.columns)
+        self.format_columnsANDheadings(dataframe)
+        idx = 0 
+        # Insert data into the treeview
+        for i, row in dataframe.iterrows():
+            
+            self.tree.insert("", idx, values=tuple(row)) # type: ignore 
+            idx += 1 
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        # Bind the click event to the function
+        self.tree.bind("<ButtonRelease-1>", self.on_tree_release )
+
+        # Pack the treeview and scrollbar
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    
+
+    def on_tree_release(self, event,):
+        
+        selection = self.tree.selection()
+        if len(selection) > 0 :
+            item = selection[0]
+            values = self.tree.item(item, 'values')
+            col_id = self.tree.identify_column(event.x)
+            col = self.tree.column(col_id, 'id')
+            print("Clicked Row Data:", values)
+            print("Clicked Column:", col)
+            return col , values
+        # Unhighlight the selected row
+        # self.tree.selection_remove(self.tree.selection())
+
+
+    def sort_column(self, col, reverse):
+        data = [(self.tree.set(child, col), child) for child in self.tree.get_children('')]
+        data.sort(reverse=reverse)
+        for index, item in enumerate(data):
+            self.tree.move(item[1], '', index)
+        self.tree.heading(col, command=lambda: self.sort_column(self.tree, col, not reverse))
+
 class TickerSelectionBox(ttk.Combobox):
     
     def __init__(self, master, ):
