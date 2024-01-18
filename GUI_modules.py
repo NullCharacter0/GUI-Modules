@@ -257,23 +257,31 @@ class SingleDataFrameViewer(tk.Frame):
 
 class SingleTreeViewer(tk.Frame):
     
-    def __init__(self, master,dataframe:pd.DataFrame) -> None:
+    def __init__(self, master,dataframe:pd.DataFrame, column_blackList: list = []) -> None:
         
         super().__init__(master)
         # Create a treeview widget
-
+        if column_blackList != [] :
+                
+            filterColumnList = [i for i in dataframe.columns if i not in  column_blackList]
+            
+            dataframe =  dataframe[filterColumnList]
+            print(dataframe.columns)
+            pass        
         self.tree = ttk.Treeview(self)
-        
+        self.tree["columns"] = tuple(dataframe.columns)
+
         # Format columns
         self.tree.column("#0", width=0, stretch=tk.NO)
         for col in dataframe.columns:
-            self.tree.column(col, anchor=tk.W, width=60)
+            self.tree.column(col, anchor=tk.W, width=80)
             self.tree.heading(col, text=col, anchor=tk.W)
-
+        idx = 0 
         # Insert data into the treeview
         for i, row in dataframe.iterrows():
-            self.tree.insert("", i, values=tuple(row)) # type: ignore 
-
+            
+            self.tree.insert("", idx, values=tuple(row)) # type: ignore 
+            idx += 1 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
