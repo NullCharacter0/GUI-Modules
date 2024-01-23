@@ -9,8 +9,9 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 
-# from Data import Products
-
+import sys
+sys.path.insert(1, "/home/will/Projects/CoinBaseADVtrade_Data")
+from Data import Products, Wallet, Candles
 
 def createCanvasFromMatPlt(fig ,master,pack_toolbar: bool = False):
     canvas = FigureCanvasTkAgg(fig, master=master)  # A tk.DrawingArea.
