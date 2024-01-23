@@ -227,7 +227,7 @@ class SingleDataFrameViewer(tk.Frame):
 
         # Insert data into the treeview
         for i, row in dataframe.iterrows():
-            self.tree.insert("", i, values=tuple(row)) # type: ignore 
+            self.tree.insert("", i, values=tuple(row),tags="unchecked") # type: ignore 
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
@@ -246,44 +246,58 @@ class SingleDataFrameViewer(tk.Frame):
         if len(selection) > 0 :
             item = selection[0]
             values = self.tree.item(item, 'values')
+            current_state = self.tree.item(item, 'tags')
+
             col_id = self.tree.identify_column(event.x)
             col = self.tree.column(col_id, 'id')
             print("Clicked Row Data:", values)
             print("Clicked Column:", col)
+            print("Clicked State:", current_state)
+
             return col , values
         # Unhighlight the selected row
         # self.tree.selection_remove(self.tree.selection())
 
 
 class SingleTreeViewer(tk.Frame):
+    """
+    Base For all dateframe based treeview widgets
+    Requires: 
+        pd.DataFrame
     
-    def __init__(self, master,dataframe:pd.DataFrame, column_blackList: list = []) -> None:
+    """
         
-        super().__init__(master)
-        # Create a treeview widget
-        if column_blackList != [] :
-                
-            filterColumnList = [i for i in dataframe.columns if i not in  column_blackList]
-            
-            dataframe =  dataframe[filterColumnList]
-            print(dataframe.columns)
-            pass        
-        self.tree = ttk.Treeview(self)
-        self.tree["columns"] = tuple(dataframe.columns)
+    def test_floatORstr(self, x):
+        try: 
+            return float(x)
+        except ValueError:
+            return x 
 
-        # Format columns
-        self.tree.column("#0", width=0, stretch=tk.NO)
-        for col in dataframe.columns:
-            self.tree.column(col, anchor=tk.W, width=80)
-            self.tree.heading(col, text=col, anchor=tk.W)
-        idx = 0 
-        # Insert data into the treeview
-        for i, row in dataframe.iterrows():
+    def treeview_sort_column(self, col, reverse):
+        
+        
+        l = [(self.tree.set(self.test_floatORstr(k), col), k) for k in self.tree.get_children('')]
+        l = [(self.test_floatORstr(tpl[0]), tpl[1]) for tpl in l]
+        l.sort(reverse=reverse)
+
+        # rearrange items in sorted positions
+        for index, (val, k) in enumerate(l):
+            self.tree.move(k, '', index)
+
+        # reverse sort next time
+        self.tree.heading(col, command=lambda: \
+                self.treeview_sort_column( col, not reverse))
+
+    def setup_heading(self, col):
+        self.tree.heading(col, text=col, command=lambda _col=col: self.treeview_sort_column(col, False))
+
+    def full_heading_setup(self):
+        for col in self.tree["columns"]:
+            self.setup_heading(col)
             
-            self.tree.insert("", idx, values=tuple(row)) # type: ignore 
-            idx += 1 
-        # Add scrollbar
+    def treeview_With_VSB(self):
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        # Add scrollbar
         self.tree.configure(yscrollcommand=scrollbar.set)
         # Bind the click event to the function
         self.tree.bind("<ButtonRelease-1>", self.on_tree_release )
@@ -292,17 +306,51 @@ class SingleTreeViewer(tk.Frame):
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
     
+    def columnAndHeadingsetUp(self):
+        if self.column_blackList != [] :
+            filterColumnList = [i for i in self.dataframe.columns if i not in  self.column_blackList]
+            self.dataframe =  self.dataframe[filterColumnList]
+        self.tree["columns"] = tuple(self.dataframe.columns)
+        self.full_heading_setup()
+        pass
+
+    def populate(self,):
+        """
+        Replace This with any future population methods you may have """
+        idx= 0 
+        for i, row in self.dataframe.iterrows():
+            
+            self.tree.insert("", idx, values=tuple(row),tags="unchecked") # type: ignore 
+            idx += 1         
+
+    
+    def __init__(self, master,dataframe:pd.DataFrame, column_blackList: list = []) -> None:
+        
+        
+        super().__init__(master)
+        # Create a treeview widget
+        self.tree = ttk.Treeview(self)
+        self.column_blackList = column_blackList
+        self.dataframe= dataframe
+        
+        self.columnAndHeadingsetUp()
+        self.populate()
+        self.treeview_With_VSB()
 
     def on_tree_release(self, event,):
         
+
         selection = self.tree.selection()
         if len(selection) > 0 :
             item = selection[0]
             values = self.tree.item(item, 'values')
+            current_state = self.tree.item(item, 'tags')
+
             col_id = self.tree.identify_column(event.x)
             col = self.tree.column(col_id, 'id')
             print("Clicked Row Data:", values)
             print("Clicked Column:", col)
+            print("Clicked State:", current_state)
             return col , values
         # Unhighlight the selected row
         # self.tree.selection_remove(self.tree.selection())
@@ -310,19 +358,37 @@ class SingleTreeViewer(tk.Frame):
 
 
 class SingleTreeViewerModed(tk.Frame):
-    
-    
-    def format_columnsANDheadings(self,dataframe):
-        """Edits The Treeview object's columns and headings to hold the 
-        contents of the given dataframe
-        """
-        # Format columns
-        self.tree.column("#0", width=0, stretch=tk.NO) # I Believe this is the index column 
-        for col in dataframe.columns:
-            # self.tree.column(col, anchor=tk.W, width=80)
-            self.tree.heading(col, text=col, anchor=tk.W)
-    
-    
+    def test_floatORstr(self, x):
+        try: 
+            return float(x)
+        except ValueError:
+            return x 
+
+    def treeview_sort_column(self, col, reverse):
+        
+        
+        l = [(self.tree.set(self.test_floatORstr(k), col), k) for k in self.tree.get_children('')]
+        l = [(self.test_floatORstr(tpl[0]), tpl[1]) for tpl in l]
+        l.sort(reverse=reverse)
+
+        # rearrange items in sorted positions
+        for index, (val, k) in enumerate(l):
+            self.tree.move(k, '', index)
+
+        # reverse sort next time
+        self.tree.heading(col, command=lambda: \
+                self.treeview_sort_column( col, not reverse))
+
+    def setup_heading(self, col):
+        self.tree.heading(col, text=col, command=lambda _col=col: \
+                    self.treeview_sort_column(col, False))
+
+
+    def full_heading_setup(self):
+        for col in self.tree["columns"]:
+            self.setup_heading(col)
+
+        
     def __init__(self, master,dataframe:pd.DataFrame, column_blackList: list = []) -> None:
         
         super().__init__(master)
@@ -335,9 +401,10 @@ class SingleTreeViewerModed(tk.Frame):
             dataframe =  dataframe[filterColumnList]
             print(dataframe.columns)
             pass        
+        
         self.tree = ttk.Treeview(self)
         self.tree["columns"] = tuple(dataframe.columns)
-        self.format_columnsANDheadings(dataframe)
+        self.full_heading_setup()
         idx = 0 
         # Insert data into the treeview
         for i, row in dataframe.iterrows():
