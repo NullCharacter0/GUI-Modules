@@ -188,9 +188,9 @@ class DoubleDataFrameViewer(tk.Frame):
     def __init__(self, master,openTrades,closedTrades ) -> None:
         super().__init__(master)
         self.openTrades_tv = SingleDataFrameViewer(self,openTrades)
-        self.openTrades_tv.pack(side=TOP,fill="both",expand=1)
+        self.openTrades_tv.pack(side=TOP,fill="x",expand=1)
         closedTrades_tv = SingleDataFrameViewer(self,closedTrades)
-        closedTrades_tv.pack(side=TOP,fill="both",expand=1)
+        closedTrades_tv.pack(side=TOP,fill="x")
         
         self.openTradesTree =  self.openTrades_tv.tree
         self.closedTradesTree =  closedTrades_tv.tree
@@ -237,8 +237,8 @@ class SingleDataFrameViewer(tk.Frame):
         self.tree.bind("<ButtonRelease-1>", self.on_tree_release )
 
         # Pack the treeview and scrollbar
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        scrollbar.pack(side=tk.LEFT, fill=tk.Y,expand=True)
 
 
     def on_tree_release(self, event,):
