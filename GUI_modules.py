@@ -1,3 +1,5 @@
+print("rebase from unstable test ")
+
 from collections.abc import Callable
 from tkinter import BOTH, BOTTOM, LEFT, N, TOP, X, Y, Frame, Label, LabelFrame, Radiobutton, StringVar, ttk
 import tkinter as tk
@@ -10,9 +12,8 @@ import pandas as pd
 import numpy as np
 
 import sys
-sys.path.insert(1, "/home/will/Projects/CoinBaseADVtrade_Data")
+sys.path.insert(1, "/home/will/Projects/Main Project Files/CoinBaseADVtrade_Data")
 from Data import Products, Wallet, Candles
-
 def createCanvasFromMatPlt(fig ,master,pack_toolbar: bool = False):
     canvas = FigureCanvasTkAgg(fig, master=master)  # A tk.DrawingArea.
     canvas.draw()
@@ -49,6 +50,21 @@ class FinancialModules:
             canvas1.get_tk_widget().pack(side="top")
             canvas2.get_tk_widget().pack(side="top")
             
+            
+    class ProductList(Frame):
+        default_blacklist: list = [ "base_increment", "quote_increment","volume_percentage_change_24h",
+            "quote_min_size", "quote_max_size", "base_min_size", "base_max_size",
+            "base_name", "quote_name", "is_disabled", "cancel_only", "limit_only",
+            "post_only", "trading_disabled", "product_type", "quote_currency_id",
+            "base_currency_id", "mid_market_price", "alias", "alias_to", 
+            "base_display_symbol", "quote_display_symbol", "view_only", "price_increment",]
+        
+        def __init__(self,master, products, blacklist = default_blacklist):
+            super().__init__(master)
+            stv = SingleTreeViewer(master, products,blacklist)
+            stv.pack(expand=1, fill='both')
+            
+        pass
         
 class PremadeMatplotFigures:
     
@@ -277,7 +293,8 @@ class SingleTreeViewer(tk.Frame):
     def treeview_sort_column(self, col, reverse):
         
         
-        l = [(self.tree.set(self.test_floatORstr(k), col), k) for k in self.tree.get_children('')]
+        data = [(self.tree.set(child, col), child) for child in self.tree.get_children('')]
+        l = [(self.tree.set(k, col), k) for k in self.tree.get_children('')]
         l = [(self.test_floatORstr(tpl[0]), tpl[1]) for tpl in l]
         l.sort(reverse=reverse)
 
@@ -356,6 +373,96 @@ class SingleTreeViewer(tk.Frame):
         # Unhighlight the selected row
         # self.tree.selection_remove(self.tree.selection())
 
+
+
+class SingleTreeViewerModed(tk.Frame):
+    def test_floatORstr(self, x):
+        # print(x)
+        
+        try: 
+            return float(x)
+        except ValueError:
+            return x 
+
+    def treeview_sort_column(self, col, reverse):
+        
+        data = [(self.tree.set(child, col), child) for child in self.tree.get_children('')]
+        l = [(self.tree.set(k, col), k) for k in self.tree.get_children('')]
+        l = [(self.test_floatORstr(tpl[0]), tpl[1]) for tpl in l]
+        l.sort(reverse=reverse)
+
+        # rearrange items in sorted positions
+        for index, (val, k) in enumerate(l):
+            self.tree.move(k, '', index)
+
+        # reverse sort next time
+        self.tree.heading(col, command=lambda: \
+                self.treeview_sort_column( col, not reverse))
+
+    def setup_heading(self, col):
+        self.tree.heading(col, text=col, command=lambda _col=col: \
+                    self.treeview_sort_column(col, False))
+
+
+    def full_heading_setup(self):
+        for col in self.tree["columns"]:
+            self.setup_heading(col)
+
+        
+    def __init__(self, master,dataframe:pd.DataFrame, column_blackList: list = []) -> None:
+        
+        super().__init__(master)
+        # Create a treeview widget
+        
+        if column_blackList != [] :
+                
+            filterColumnList = [i for i in dataframe.columns if i not in  column_blackList]
+            
+            dataframe =  dataframe[filterColumnList]
+            print(dataframe.columns)
+            pass        
+        
+        self.tree = ttk.Treeview(self)
+        self.tree["columns"] = tuple(dataframe.columns)
+        self.full_heading_setup()
+        idx = 0 
+        # Insert data into the treeview
+        for i, row in dataframe.iterrows():
+            
+            self.tree.insert("", idx, values=tuple(row)) # type: ignore 
+            idx += 1 
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        # Bind the click event to the function
+        self.tree.bind("<ButtonRelease-1>", self.on_tree_release )
+
+        # Pack the treeview and scrollbar
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    
+
+    def on_tree_release(self, event,):
+        
+        selection = self.tree.selection()
+        if len(selection) > 0 :
+            item = selection[0]
+            values = self.tree.item(item, 'values')
+            col_id = self.tree.identify_column(event.x)
+            col = self.tree.column(col_id, 'id')
+            print("Clicked Row Data:", values)
+            print("Clicked Column:", col)
+            return col , values
+        # Unhighlight the selected row
+        # self.tree.selection_remove(self.tree.selection())
+
+
+    def sort3_column(self, col, reverse):
+        data = [(self.tree.set(child, col), child) for child in self.tree.get_children('')]
+        data.sort(reverse=reverse)
+        for index, item in enumerate(data):
+            self.tree.move(item[1], '', index)
+        self.tree.heading(col, command=lambda: self.sort_column(self.tree, col, not reverse))
 
 class TickerSelectionBox(ttk.Combobox):
     

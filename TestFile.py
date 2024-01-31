@@ -1,16 +1,16 @@
 from GUI_modules import * 
 import tkinter as tk 
+import sys
 
 root = tk.Tk()
 
-pieframe = FinancialModules.PiePerformanceFrame(root)
-pieframe.pack()
+def productlist_test():
+    FinancialModules.ProductList(root,products=Products().list_products()).pack()
 
+
+
+def pieFrameTest():
+    FinancialModules.PiePerformanceFrame(root).pack()
 
 
 root.mainloop()
-
-
-
-
-
